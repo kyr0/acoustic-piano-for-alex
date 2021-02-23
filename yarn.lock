@@ -1619,10 +1619,10 @@
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-"@tonejs/midi@^2.0.25":
-  version "2.0.25"
-  resolved "https://registry.yarnpkg.com/@tonejs/midi/-/midi-2.0.25.tgz#c93783d052518b922b20fa76bc3bc92e2e8e4a82"
-  integrity sha512-zT8pZy/upJCGqXHSCO1+U39wgWIaizDg+sv7nVReJehMcT86Peh+zo5kQ42Guwgc/gnv47n7fJhoTRGsJVaqJQ==
+"@tonejs/midi@^2.0.26":
+  version "2.0.26"
+  resolved "https://registry.yarnpkg.com/@tonejs/midi/-/midi-2.0.26.tgz#cb2386744b0a6432119d883f560b56fab1cfbeb2"
+  integrity sha512-Bmyp79hleRShG6TYwUtMm3ls+Eb2ReXTQL6nhNKIi3eC19M7ckyxASrI1G/uzzR6VPtLo8Cp6iyQPv/hYU/jVg==
   dependencies:
     array-flatten "^2.1.2"
     midi-file "^1.1.2"

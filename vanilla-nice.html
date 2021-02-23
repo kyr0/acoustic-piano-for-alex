@@ -1,0 +1,112 @@
+<html>
+	<head>
+		<script src='https://surikov.github.io/webaudiofont/npm/dist/WebAudioFontPlayer.js'></script>
+		<script src='https://surikov.github.io/webaudiofontdata/sound/0000_JCLive_sf2_file.js'></script>
+        <script src="https://unpkg.com/@tonejs/midi"></script>
+
+		<script>
+			let notes = [];
+			var tone = _tone_0000_JCLive_sf2_file;
+			var AudioContextFunc = window.AudioContext || window.webkitAudioContext;
+			var audioContext = new AudioContextFunc();
+			var player = new WebAudioFontPlayer();
+			let genInterval;
+
+			player.loader.decodeAfterLoading(audioContext, '_tone_0000_JCLive_sf2_file');
+			
+			function selectIns(o){
+				var n=document.getElementById('ins').selectedIndex;
+				var info=player.loader.instrumentInfo(n)
+				console.log('select',n,info);
+				player.loader.startLoad(audioContext, info.url, info.variable);
+				player.loader.waitLoad(function () {
+					console.log('done',info.variable);
+					tone=window[info.variable];
+					player.cancelQueue(audioContext);
+				});
+			}
+            
+            function downloadMidiFile(compositionName, typedArray) {
+                var blob = new Blob([typedArray], {type: "audio/midi"});
+                var link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                var fileName = compositionName;
+                link.download = fileName;
+                link.click();
+            };
+
+            function onDownloadMIDIButtonClick() {
+
+                let midi = new Midi();
+
+                const track = midi.addTrack();
+                const firstNoteTime = notes[0].time;
+
+                for (let i=0; i<notes.length; i++) {
+                    track.addNote({
+                        midi: notes[i].pitch,
+                        time: ((notes[i].time - firstNoteTime) / 1000), // absolute time to relative time (starts with 0)
+                        duration: 1 / notes[i].length * 1000,
+                        velocity: notes[i].velocity,
+                    });
+                }
+                
+                const midiFileBufferData = midi.toArray();
+
+                console.log('midiFileBufferData', midiFileBufferData);
+
+                downloadMidiFile("wonderfully-generated.mid", midiFileBufferData);
+                
+            }
+
+			function onStartToChore() {
+
+				const getRandomMidiValue = () => Math.round(Math.abs(Math.random() * 127 - 30));
+
+				genInterval = setInterval(() => {
+
+					let nextNote = {
+						time: Date.now(),
+						pitch: getRandomMidiValue(),
+						velocity: getRandomMidiValue(),
+						length: (1000 + Math.random() * 1000 + ( Math.random() > 0.5 ? -500 : 0  )), // ms
+					};
+
+					notes.push(nextNote);
+
+					// live playback
+					let envelope = player.queueWaveTable(audioContext, audioContext.destination, tone, 0, nextNote.pitch, 123456789, nextNote.velocity / 100);
+
+					setTimeout(() => {
+
+						envelope.cancel();
+
+					}, nextNote.length)
+
+				}, 1000);
+			}
+
+			function onStopToChore() {
+				clearInterval(genInterval);
+			}
+		</script>
+	</head>
+	<body>
+		<p><select id='ins' onchange="selectIns(this)"></select></p>
+
+        <button onClick="onStartToChore()">Start</button>
+        <button onClick="onStopToChore()">Stop</button>
+
+
+        <button onClick="onDownloadMIDIButtonClick()">Download MIDI</button>
+
+		<script>
+			var sel = document.getElementById('ins');
+			for(var i = 0; i < player.loader.instrumentKeys().length; i++) {
+				var opt = document.createElement('option');
+				opt.innerHTML = ''+(i+1)+'. '+player.loader.instrumentInfo(i).title;
+				sel.appendChild(opt);
+			}
+		</script>
+	</body>
+</html>
