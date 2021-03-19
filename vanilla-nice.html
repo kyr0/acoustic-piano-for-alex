@@ -35,58 +35,93 @@
                 link.click();
             };
 
+
+			// for each bird, we need an array here
+			window.compositon = [
+				[], [], []
+			];
+
+			window.timeSignatureMeasureTimeInMS = 1000;
+
             function onDownloadMIDIButtonClick() {
 
                 let midi = new Midi();
 
-                const track = midi.addTrack();
-                const firstNoteTime = notes[0].time;
+				// per bird
+				for (let i=0; i<window.compositon.length; i++) {
 
-                for (let i=0; i<notes.length; i++) {
-                    track.addNote({
-                        midi: notes[i].pitch,
-                        time: ((notes[i].time - firstNoteTime) / 1000), // absolute time to relative time (starts with 0)
-                        duration: 1 / notes[i].length * 1000,
-                        velocity: notes[i].velocity,
-                    });
-                }
-                
+                	const track = midi.addTrack();
+
+					// notes per bird
+					let birdNotes = window.compositon[i]; // [{ pitch: 12 }]
+
+                	const firstNoteTime = birdNotes[0].time;
+
+					for (let j=0; j<birdNotes.length; j++) {
+						track.addNote({
+							midi: birdNotes[j].pitch,
+							time: ((birdNotes[j].time - firstNoteTime) / 1000), // absolute time to relative time (starts with 0)
+							duration: 1 / birdNotes[j].length * 1000,
+							velocity: birdNotes[j].velocity - 30,
+						});
+					}	
+				}
+
                 const midiFileBufferData = midi.toArray();
 
                 console.log('midiFileBufferData', midiFileBufferData);
 
                 downloadMidiFile("wonderfully-generated.mid", midiFileBufferData);
-                
             }
 
-			function onStartToChore() {
+
+			function onStartToChord() {
 
 				const getRandomMidiValue = () => Math.round(Math.abs(Math.random() * 127 - 30));
 
 				genInterval = setInterval(() => {
 
-					let nextNote = {
-						time: Date.now(),
-						pitch: getRandomMidiValue(),
-						velocity: getRandomMidiValue(),
-						length: (1000 + Math.random() * 1000 + ( Math.random() > 0.5 ? -500 : 0  )), // ms
-					};
+					for (let i=0; i<window.compositon.length; i++) {
+						
+						// was wurde bisher gespielt (Noten)
+						let birdNotes = window.compositon[i];
 
-					notes.push(nextNote);
+						// entscheidung getroffen aber nicht gemerkt
+						let pitchDecision = getRandomMidiValue();
 
-					// live playback
-					let envelope = player.queueWaveTable(audioContext, audioContext.destination, tone, 0, nextNote.pitch, 123456789, nextNote.velocity / 100);
+						let prevNote = birdNotes[birdNotes.length-1];
 
-					setTimeout(() => {
+						// vorherige note wurde schon gespielt
+						if ((prevNote && prevNote.pitch !== pitchDecision) || !prevNote) {
 
-						envelope.cancel();
+							let nextNote = {
+								time: Date.now(),
+								pitch: pitchDecision,
+								velocity: getRandomMidiValue(),
+								length: window.timeSignatureMeasureTimeInMS
+							};
+						
+							birdNotes.push(nextNote);
 
-					}, nextNote.length)
+							if (birdNotes['envelope']) {
+								birdNotes['envelope'].cancel();
+							}	
 
-				}, 1000);
+							// start tone playback
+							birdNotes['envelope'] = player.queueWaveTable(audioContext, audioContext.destination, tone, 0, nextNote.pitch, 123456789, nextNote.velocity / 100);
+						} else {
+
+							// we don't play it,
+							// but for the MIDI information we need to extend the previous note length by the time 
+							// of the time signature
+							prevNote.length += window.timeSignatureMeasureTimeInMS;
+						}
+					}
+
+				}, 10);
 			}
 
-			function onStopToChore() {
+			function onStopToChord() {
 				clearInterval(genInterval);
 			}
 		</script>
@@ -94,8 +129,8 @@
 	<body>
 		<p><select id='ins' onchange="selectIns(this)"></select></p>
 
-        <button onClick="onStartToChore()">Start</button>
-        <button onClick="onStopToChore()">Stop</button>
+        <button onClick="onStartToChord()">Start</button>
+        <button onClick="onStopToChord()">Stop</button>
 
 
         <button onClick="onDownloadMIDIButtonClick()">Download MIDI</button>
